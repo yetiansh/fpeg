@@ -1,0 +1,3 @@
+from fpeg import *
+
+pass

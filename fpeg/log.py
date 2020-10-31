@@ -1,0 +1,2 @@
+class CodecLogger:
+  pass
