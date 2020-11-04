@@ -1,5 +1,5 @@
-from collections import defaultdict
-from inspect import signature
+from inspect import signature, Parameter
+from multiprocessing import Pool
 
 
 class Pipe:
@@ -32,10 +32,9 @@ class Pipe:
     Send the recieved and processed data, add a log record and send the monitor a message.
     """
     self.send = True
-    self.logger.log()
-    self.monitor.gather(self.respond())
+    self.monitor.gather(*self.respond())
 
-    return self.X_recieved_, self.X_sended_
+    return self.recieved_, self.sended_
 
   def respond(self):
     """
@@ -45,10 +44,12 @@ class Pipe:
     recieving and sending data.
     """
     if not self.send:
-      raise RuntimeError("The send method hasn't been called yet. "
-                         "Do not send message to the monitor.")
+      msg = "Send method hasn't been called yet, do not send message to the monitor."
+      self.logs[-1] += self.formatter.error(msg)
+      raise RuntimeError(msg)
+
     self.send = False
-    return (self.X_recieved_, self.X_sended_), self.log[-1], self.get_params()
+    return (self.recieved_, self.sended_), self.logs[-1], self.get_params()
 
   def accelerate(self, **params):
     """
@@ -57,8 +58,8 @@ class Pipe:
     try:
       self.task_number = params["task_number"]
     except KeyError as err:
-      msg = "Task number must be specified."
-      self.logger.error(msg)
+      msg = "\"task_number\" must be passed to the accelerate method."
+      self.logs[-1] += self.formatter.error(msg)
       raise err
 
     try:
@@ -72,9 +73,8 @@ class Pipe:
       self.accelerate = self.accelerate or bool(task_number < self.min_task_number)
 
     if self.accelerate:
-      self.pool = None
-    else:
       self.pool = Pool(min(task_number, self.max_pool_size))
+      
 
   def set_params(self, **params):
     if not params:
@@ -103,10 +103,16 @@ class Pipe:
     return out
 
   def _clear_record(self):
-    names = self._get_record_names()
+    init = self.__init__
+    if init is object.__init__:
+      return
+
     params = {}
-    for name in names:
-      params[name] = []
+    excluded_names = ["self", "name", "mode", "flag"]
+    init_signature = signature(init)
+    for key, val in init_signature.parameters.items():
+      if key not in excluded_names and val.default is not Parameter.empty:
+        params[key] = val.default
 
     self.setattr(**params)
 
@@ -121,17 +127,11 @@ class Pipe:
                   if p.name != 'self' and p.kind != p.VAR_KEYWORD]
     return sorted([p.name for p in parameters])
 
-  @classmethod
-  def _get_record_names(cls):
-    names = self._get_param_names()
-    excluded_names = ["name", "mode"]
-    return sorted([name for name in names if name not in excluded_names])
-
   def __repr__(self):
     """
     Pretty print the pipe.
     """
-    return self.pretty_printer.print(self.get_params())
+    return self.pprinter.print(self.get_params())
 
 
 class Codec(Pipe):
@@ -145,18 +145,17 @@ class Codec(Pipe):
     """
     Recieve stream of data.
     """
+    self.logs.append("")
     self.accelerate(**params)
-    self.X_recieved_ = X
+    self.recieved_ = X
     if self.mode == "encode":
-      self.X_sended_ = self.encode(X, **params)
+      self.sended_ = self.encode(X, **params)
     elif self.mode == "decode":
-      self.X_sended_ = self.decode(X, **params)
+      self.sended_ = self.decode(X, **params)
     else:
-      msg = "Invalid parameter %s for codec %s. "
-            "Codec.mode should be set to \"encode\" "
-            "or \"decode\"." % (self)
-      self.logger.error(msg)
-      raise ValueError(msg)
+      msg = "Invalid attribute %s for codec %s. Codec.mode should be set to \"encode\" or \"decode\"." % (self.mode, self)
+      self.logs[-1] += self.formatter.error(msg)
+      raise AttributeError(msg)
 
     return self
 
@@ -169,40 +168,31 @@ class Transformer(Pipe):
   """
 
   def recv(self, X, **params):
+    self.logs.append("")
     self.accelerate(**params)
-    self.X_recieved_ = X
+    self.recieved_ = X
     if self.mode == "forward":
-      self.X_sended_ = self.forward(X, **params)
+      self.sended_ = self.forward(X, **params)
     elif self.mode == "backward":
-      self.X_sended_ = self.backward(X, **params)
+      self.sended_ = self.backward(X, **params)
     else:
-      msg = "Invalid parameter %s for transformer %s. "
-            "Transformer.mode should be set to \"forward\" "
-            "or \"backward\"." % (self)
-      self.logger.error(msg)
-      raise ValueError(msg)
+      msg = "Invalid attribute %s for transformer %s. Transformer.mode should be set to \"forward\" or \"backward\"." % (self.mode, self)
+      self.logs[-1] += self.formatter.error(msg)
+      raise AttributeError(msg)
 
     return self
     
 
-class Processor(Pipe):
-  """
-  Base class of preprocessor, postprocessor, stream organizer and decomposer.
+# class Processor(Pipe):
+#   """
+#   Base class of preprocessor, postprocessor, stream organizer and decomposer.
 
-  In FPEG, preprocess, postprocess, stream organization and decomposition methods are implemented as processors.
-  """
+#   In FPEG, preprocess, postprocess, stream organization and decomposition methods are implemented as processors.
+#   """
   
-  def recv(self, X, **params):
-    self.accelerate(**params)
-    self.X_recieved_ = X
-    if self.mode == "process":
-      self.X_sended_ = self.process(X, **params)
-    elif self.mode == "inverse_process":
-      self.X_sended_ = self.inverse_process(X, **params)
-    else:
-      raise ValueError("Invalid parameter %s for transformer %s. "
-                       "Transformer.mode should be set to \"forward\" "
-                       "or \"backward\"." %
-                       (self))
+#   def recv(self, X, **params):
+#     self.accelerate(**params)
+#     self.recieved_ = X
+#     self.sended_ = self.process(X, **params)
 
-    return self
+#     return self
