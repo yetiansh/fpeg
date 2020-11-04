@@ -1,8 +1,8 @@
 from ..base import Codec
 from ..config import read_config
-from ..log import Formatter
-from ..printer import Pprinter
-from ..utils import dht2lut
+from ..utils.format import Formatter
+from ..utils.pprint import Pprinter
+from ..utils.lut import dht2lut
 
 
 config = read_config()

@@ -70,11 +70,10 @@ class Pipe:
     try:
       self.accelerate = params["accelerate"]
     except KeyError:
-      self.accelerate = self.accelerate or bool(task_number < self.min_task_number)
+      self.accelerate = self.accelerate or bool(self.task_number < self.min_task_number)
 
     if self.accelerate:
-      self.pool = Pool(min(task_number, self.max_pool_size))
-      
+      self.pool = Pool(min(self.task_number, self.max_pool_size))
 
   def set_params(self, **params):
     if not params:
@@ -181,18 +180,3 @@ class Transformer(Pipe):
       raise AttributeError(msg)
 
     return self
-    
-
-# class Processor(Pipe):
-#   """
-#   Base class of preprocessor, postprocessor, stream organizer and decomposer.
-
-#   In FPEG, preprocess, postprocess, stream organization and decomposition methods are implemented as processors.
-#   """
-  
-#   def recv(self, X, **params):
-#     self.accelerate(**params)
-#     self.recieved_ = X
-#     self.sended_ = self.process(X, **params)
-
-#     return self

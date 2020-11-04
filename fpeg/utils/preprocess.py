@@ -47,18 +47,17 @@ class Spliter(Pipe):
     self.pprinter = Pprinter()
     self.monitor = Monitor()
 
-
   def recv(self, X, **params):
     self.logs.append("")
     self.recieved_ = X
     shape = X[0].shape
-    n_row_splits = ceil(shape[0] / self.tile_shape[0])
-    n_col_splits = ceil(shape[1] / self.tile_shape[1])
+    row_indices = np.arange(self.tile_shape[0], shape[0], self.tile_shape[0], dtype=int)
+    col_indices = np.arange(self.tile_shape[1], shape[1], self.tile_shape[1], dtype=int)
 
     tiles = []
     for x in X:
-      for row_splits in np.split(x, n_row_splits, axis=0):
-        tiles.extend(np.split(row_splits, n_col_splits, axis=1))
+      for row_splits in np.array_split(x, row_indices, axis=0):
+        tiles.extend(np.array_split(row_splits, col_indices, axis=1))
 
     self.sended_ = tiles
 
