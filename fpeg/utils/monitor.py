@@ -7,9 +7,9 @@ class Monitor:
   def __init__(self):
     self.datas = []
     self.logs = []
-    self.waking = False
+    self.waking = True
 
-  def gather(data, log):
+  def gather(self, data, log, params):
     if not self.waking:
       raise RuntimeError("Monitor is sleeping. "
                          "Do not send message to the monitor.")
