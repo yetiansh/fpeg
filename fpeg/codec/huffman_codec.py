@@ -1,18 +1,16 @@
-from configparser import ConfigParser, ExtendedInterpolation
-from multiprocessing import Pool
 from ..base import Codec
-from ..log import CodecLogger
+from ..config import read_config
+from ..log import Formatter
+from ..printer import Pprinter
 from ..utils import dht2lut
 
 
-config_path = r"config.ini"
-config = ConfigParser()
-config._interpolation = ExtendedInterpolation()
-config.read(config_path)
-print(config)
+config = read_config()
 
-min_task_number = config.getint("accelerate", "codec_min_task_number")
-max_pool_size = config.getint("accelerate", "codec_max_pool_size")
+min_task_number = config.get("accelerate", "codec_min_task_number")
+max_pool_size = config.get("accelerate", "codec_max_pool_size")
+
+fmt = config.get("log", "fmt")
 
 
 class HuffmanCodec(Codec):
@@ -31,14 +29,14 @@ class HuffmanCodec(Codec):
                accelerate=False
                ):
     """
-    Init and set the explicit attributes of a canonical huffman codec.
+    Init and set attributes of a canonical huffman codec.
 
-    Parameters / Explicit Attributes
-    --------------------------------
+    Explicit Attributes
+    -------------------
     name: str, optional
       Name of the codec.
     mode: str, optional
-      Mode of the codec, must in {"encode", "decode"}.
+      Mode of the codec, must in ["encode", "decode"].
     dhts: list of lists, optional
       DHTs that store huffman trees for encoding and decoding.
     luts: list of dicts, optional
@@ -54,10 +52,14 @@ class HuffmanCodec(Codec):
       Minimun task number to start a pool.
     max_pool_size: int
       Maximun size of pool.
-    logs: str
-      Log messages of recieving and sending data.
-    logger: CodecLogger
-      logger for generating log messages.
+    pool: multiprocessing.Pool
+      Multiprocess pool for accelerate processing.
+    logs: list of str
+      Log messages of recieving and sending data. Each element in list is a log of recieving and sending data.
+    formatter: fpeg.log.Formatter
+      Formatter for generating log messages.
+    pprinter: fpeg.printer.Pprinter
+      Pretty printer for printing codec.
     """
     self.name = name
     self.mode = mode
@@ -65,31 +67,39 @@ class HuffmanCodec(Codec):
     self.luts = luts
     self.task_number = task_number
     self.accelerate = accelerate
+
     self.min_task_number = min_task_number
     self.max_pool_size = max_pool_size
+    self.pool = None
     self.logs = []
-    self.logger = CodecLogger(name=name, 
-                              mode=mode,
-                              task_number=task_number,
-                              accelerate=accelerate)
+    self.formatter = Formatter(fmt=fmt)
+    self.pprinter = Pprinter()
 
   def encode(self, X, **params):
     self._clear_record()
     try:
       use_lut = bool(params["use_lut"])
+      msg = "\"use_lut\" is specified as true."
+      self.logs[-1] += self.formatter.message(msg)
     except KeyError:
+      msg = "\"use_lut\" is not specified, now set to false."
+      self.logs[-1] += self.formatter.warning(msg)
       use_lut = False
 
     if use_lut:
       try:
+        msg = "Converting DHTs to LUTs."
+        self.logs[-1] += self.formatter.message(msg)
         self.dhts = params["dhts"]
         self.luts = dht2lut(self.dht)
       except KeyError:
-        msg = "\"dhts\" should be passed to the encode method."
-        self.logger.error(msg)
+        msg = "\"dhts\" should be passed to the encode method since \"use_lut\" is specified as true."
+        self.logs[-1] += self.formatter.error(msg)
         raise KeyError(msg)
 
     if self.accelerate:
+      msg = "Using multiprocess pool to accelerate encoding."
+      self.logs[-1] += self.formatter.message(msg)
       if use_lut:
         inputs = [[x, lut] for x, lut in zip(X, self.luts)]
       else:
@@ -109,11 +119,13 @@ class HuffmanCodec(Codec):
       self.dhts = params["dhts"]
       self.luts = dht2lut(self.dht)
     except KeyError as err:
-      msg = ""
-      self.logger.error(msg)
+      msg = "\"dhts\" should be passed to the decode method."
+      self.logs[-1] += self.formatter.error(msg)
       raise err
     
     if self.accelerate:
+      msg = "Using multiprocess pool to accelerate decoding."
+      self.logs[-1] += self.formatter.message(msg)
       inputs = [[x, lut] for x, lut in zip(X, self.luts)]
       X = self.pool.map(self._decode, inputs)
     else:
