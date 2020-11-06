@@ -1,9 +1,43 @@
-import numpy as np
-# from fpeg.config import Config
-from fpeg.utils import Spliter
+from fpeg.pipeline import Pipeline
+from fpeg.utils.preprocess import Spliter
+from fpeg.utils.io import Reader
 
 
-spliter = Spliter()
-X = np.random.rand(150, 140, 3)
-spliter.recv_send([X[:, :, 0], X[:, :, 1], X[:, :, 2]])
-print(spliter.logs, len(spliter.recieved_), len(spliter.sended_))
+spliter = Spliter(name="spliter0")
+reader = Reader(name="reader0")
+
+pipeline = Pipeline([
+                    ("reader0", reader),
+                    ("spliter0", spliter)
+                    ],
+                    params={
+                      "reader0": {"flag": "grayscale"},
+                      "spliter0": {"tile_shape": (128, 256)}
+                    })
+
+
+path = r"in/amiya.png"
+pipeline.recv(path)
+
+path = r"in/mudrock.png"
+pipeline.recv(path)
+
+path = r"in/rosmontis.png"
+pipeline.recv(path)
+
+for i in range(5):
+  pipeline.set_params(**{
+                        "reader0": {"flag": "grayscale"},
+                        "spliter0": {"tile_shape": (128 + 4 ** i,
+                          256 - 3 ** i)}
+                      })
+  pipeline.recv(path)
+
+for pipe in pipeline.pipes:
+  print(pipe)
+
+for log in pipeline.monitor.logs:
+  print(''.join(log))
+
+for params in pipeline.monitor.params:
+  print(params)
