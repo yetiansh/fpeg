@@ -16,9 +16,6 @@ pipeline = Pipeline([
                     })
 
 
-path = r"in/amiya.png"
-pipeline.recv(path)
-
 path = r"in/mudrock.png"
 pipeline.recv(path)
 
