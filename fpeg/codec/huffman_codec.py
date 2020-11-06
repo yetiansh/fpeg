@@ -1,7 +1,5 @@
 from ..base import Codec
 from ..config import read_config
-from ..utils.format import Formatter
-from ..utils.pprint import Pprinter
 from ..utils.lut import dht2lut
 
 
@@ -9,8 +7,6 @@ config = read_config()
 
 min_task_number = config.get("accelerate", "codec_min_task_number")
 max_pool_size = config.get("accelerate", "codec_max_pool_size")
-
-fmt = config.get("log", "fmt")
 
 
 class HuffmanCodec(Codec):
@@ -44,7 +40,7 @@ class HuffmanCodec(Codec):
     task_number: int, optional
       Number of tasks for codec to handle.
     accelerate: bool, optional
-      Whether the process is accelerated by subprocess pool.
+      Whether the process would be accelerated by subprocess pool.
 
     Implicit Attributes
     -------------------
@@ -54,13 +50,9 @@ class HuffmanCodec(Codec):
       Maximun size of pool.
     pool: multiprocessing.Pool
       Multiprocess pool for accelerate processing.
-    logs: list of str
-      Log messages of recieving and sending data. Each element in list is a log of recieving and sending data.
-    formatter: fpeg.log.Formatter
-      Formatter for generating log messages.
-    pprinter: fpeg.printer.Pprinter
-      Pretty printer for printing codec.
     """
+    super().__init__()
+
     self.name = name
     self.mode = mode
     self.dhts = dhts
@@ -71,25 +63,19 @@ class HuffmanCodec(Codec):
     self.min_task_number = min_task_number
     self.max_pool_size = max_pool_size
     self.pool = None
-    self.logs = []
-    self.formatter = Formatter(fmt=fmt)
-    self.pprinter = Pprinter()
+    
 
   def encode(self, X, **params):
-    self._clear_record()
     try:
       use_lut = bool(params["use_lut"])
-      msg = "\"use_lut\" is specified as true."
-      self.logs[-1] += self.formatter.message(msg)
+      self.logs[-1] += self.formatter.message("\"use_lut\" is specified as true.")
     except KeyError:
-      msg = "\"use_lut\" is not specified, now set to false."
-      self.logs[-1] += self.formatter.warning(msg)
+      self.logs[-1] += self.formatter.warning("\"use_lut\" is not specified, now set to false.")
       use_lut = False
 
     if use_lut:
       try:
-        msg = "Converting DHTs to LUTs."
-        self.logs[-1] += self.formatter.message(msg)
+        self.logs[-1] += self.formatter.message("Converting DHTs to LUTs.")
         self.dhts = params["dhts"]
         self.luts = dht2lut(self.dht)
       except KeyError:
@@ -98,8 +84,7 @@ class HuffmanCodec(Codec):
         raise KeyError(msg)
 
     if self.accelerate:
-      msg = "Using multiprocess pool to accelerate encoding."
-      self.logs[-1] += self.formatter.message(msg)
+      self.logs[-1] += self.formatter.message("Using multiprocess pool to accelerate encoding.")
       if use_lut:
         inputs = [[x, lut] for x, lut in zip(X, self.luts)]
       else:
@@ -114,18 +99,16 @@ class HuffmanCodec(Codec):
     return X
 
   def decode(self, X, **params):
-    self._clear_record()
     try:
       self.dhts = params["dhts"]
       self.luts = dht2lut(self.dht)
     except KeyError as err:
       msg = "\"dhts\" should be passed to the decode method."
       self.logs[-1] += self.formatter.error(msg)
-      raise err
+      raise KeyError(msg)
     
     if self.accelerate:
-      msg = "Using multiprocess pool to accelerate decoding."
-      self.logs[-1] += self.formatter.message(msg)
+      self.logs[-1] += self.formatter.message("Using multiprocess pool to accelerate decoding.")
       inputs = [[x, lut] for x, lut in zip(X, self.luts)]
       X = self.pool.map(self._decode, inputs)
     else:
@@ -142,8 +125,7 @@ class HuffmanCodec(Codec):
     """
     return X
 
-  def _decode(self, X,
-              lut=None):
+  def _decode(self, X, lut):
     """
     Implement canonical huffman deencoding here.
     """
