@@ -16,10 +16,10 @@ pipeline = Pipeline([
                     })
 
 
-path = r"in/mudrock.png"
+path = r"in/mudrock.jpg"
 pipeline.recv(path)
 
-path = r"in/rosmontis.png"
+path = r"in/rosmontis.jpg"
 pipeline.recv(path)
 
 for i in range(5):
