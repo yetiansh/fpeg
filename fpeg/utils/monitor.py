@@ -5,17 +5,30 @@ class Monitor:
   Monitor gathers the data recieved and sended by pipes. When monitor is not waking, do not send data to it.
   """
   def __init__(self):
-    self.datas = []
+    self.data = []
     self.logs = []
-    self.waking = True
-
+    self.params = []
+    self.waking = False
+  
   def gather(self, data, log, params):
     if not self.waking:
-      raise RuntimeError("Monitor is sleeping. "
-                         "Do not send message to the monitor.")
-    self.datas.append(data)
-    self.logs.append(log)
+      raise RuntimeError("Monitor is sleeping. Do not send message to the monitor.")
+
+    self.data[-1].append(data)
+    self.logs[-1].append(log)
+    self.params[-1].append(params)
+    self.sleep()
+
+  def report(self):
+    return self.data, self.logs
+
+  def wake(self):
+    self.waking = True
+
+  def sleep(self):
     self.waking = False
 
-  def report():
-    return self.data, self.log
+  def prepare(self):
+    self.data.append([])
+    self.logs.append([])
+    self.params.append([])
