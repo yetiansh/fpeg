@@ -44,7 +44,6 @@ FPEG
             io.py
             lut.py
             monitor.py
-            pprint.py
             preprocess.py
             __init__.py
 ```
@@ -55,7 +54,7 @@ FPEG
 
 Codecs, transformers, processors are all pipes in FPEG. 
 
-A certain codec, like huffman codec, is a subclass of Pipe (and Codec). To implement a codec is to implement the \_\_init\_\_, encode and decode methods. Put what the codec need and what the monitor should know in \_\_init\_\_'s signature, such as Look Up Table (LUT) and Define Huffman Table (DHT) for encoding and decoding. After that, you can set what should not be known by monitor, such as its logs and formatter.
+A certain codec, like huffman codec, is a subclass of Pipe (and Codec). To implement a codec is to implement the \_\_init\_\_, encode and decode methods. Put what the codec need and what the monitor should know in \_\_init\_\_'s signature, such as Look Up Table (LUT) and Define Huffman Table (DHT) for encoding and decoding. After that, you can set what should not be known by monitor, such as its log and logger.
 
 In encode and decode methods, the codec should first clear its history information, i.e. the LUTs and DHTs used in processing former data, using self._clear_record method. Moreover, encode and decode methods should support parallel computing using python’s implementation subprocess pool (self.pool). **Refer to the code of HuffmanCodec for more information and follow a unified code specification** (*make other codec similar to HuffmanCodec !!!*).
 
@@ -63,30 +62,33 @@ Now you should only implement Codecs. Transformer, processor, metrics, monitor a
 
  
 
-## TODOs
+## TODO
 
 - [ ] Codecs
 	- [ ] Huffman encoding
 	- [ ] Shannon encoding
-	- [ ] Arithmetic coding
+	- [ ] Arithmetic encoding
+
 - [ ] Transformers
-  - [ ] DWT and IDWT transformer
-  - [ ] FFT and IFFT transformer
-  - [ ] DCT and IDCT transformer
+	- [ ] DWT and IDWT transformer
+	- [ ] DCT and IDCT transformer
 - [ ] Utils
-	- [ ] IO
-	  - [x] Reader
-	  - [ ] Writer
 	- [ ] Preprocess
-	  - [x] Spliter
-	  - [ ] Color conversion
-	- [ ] Quantify
-	  - [ ] Quantifier
-	  - [ ] Dequantifier
+		- [x] Spliter
+		- [ ] DC Shifter (?)
+		- [ ] Color transformer (?)
+		- [ ] …
 	- [ ] Postprocess
-	- [ ] Monitor
-	- [ ] dht2lht
-	- [ ] format
+		- [ ] …
+	- [ ] IO
+		- [x] Reader
+		- [ ] Writer
+	- [x] Formatter
+	- [x] pprint
 - [ ] Metrics
-- [ ] Pipeline
-- [x] Config
+	- [ ] Entropy
+	- [ ] SNR (?)
+	- [ ] PSNR (?)
+	- [ ] …
+- [x] Monitor
+- [x] Pipeline
