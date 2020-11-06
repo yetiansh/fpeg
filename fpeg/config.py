@@ -12,7 +12,6 @@ class Config:
     if path is not None:
       self.path = path
       self.read(path)
-      print(path, self.config)
     else:
       self.path = None
       self.config = {}
@@ -34,6 +33,12 @@ class Config:
       return
 
     self.config[section] = {}
+
+  def get_section(self, section):
+    if section not in self.config:
+      return {}
+
+    return self.config[section]
 
   def read(self,
            path=None):
@@ -62,9 +67,13 @@ if __name__ == "__main__":
   config.set("accelerate", "codec_max_pool_size", 30)
 
   config.add_section("log")
-  config.set("log", "fmt", "")
+  config.set("log", "time_format", "%Y-%m-%d %H:%M:%S")
 
   config.add_section("preprocess")
   config.set("preprocess", "tile_shape", (64, 64))
+
+  config.add_section("pprint")
+  config.set("pprint", "indent", 2)
+  config.set("pprint", "width", 80)
 
   config.write(config_path)
