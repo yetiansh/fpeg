@@ -3,7 +3,6 @@ from .base import *
 # from .transformer import *
 from .utils.monitor import Monitor
 from .utils.format import Formatter
-# from .utils.pprint import Pprinter
 
 
 config = read_config()
@@ -22,7 +21,6 @@ class Pipeline:
                params={},
                monitor=Monitor(),
                formatter=Formatter(fmt=time_format),
-               # pprinter=Pprinter(**pprint_option),
                testers=[]):
     """
     Init pipeline.
@@ -41,7 +39,7 @@ class Pipeline:
 
   def recv(self, X):
     if not self.setted:
-      self._set_pipes()
+      self._set_pipe_params()
 
     self.received_ = X
     self.monitor.prepare()
@@ -50,7 +48,7 @@ class Pipeline:
 
     self.sended_ = X
 
-    # Pipes' record are cleared, need to be setted.
+    # Pipes' explicit attributes are cleared, need to be setted.
     self.setted = False
 
   def _set_up(self):
@@ -61,31 +59,62 @@ class Pipeline:
     for name, pipe in self.steps:
       if name not in self.params:
         # raise error here
-        pass
+        raise ValueError("Invalid pipe name \'{}\'. "
+                         "Should be in {}".format(name,
+                                                  list(self.params.keys())
+                                                  )
+                         )
 
       self.names.append(name)
       self.pipes.append(pipe)
     
-    self._set_pipes()
+    self._set_pipe_params()
     self._check()
 
-  def _set_pipes(self):
+  def _set_pipe_params(self):
     for i in range(len(self.names)):
       self.pipes[i].set_params(**self.params[self.names[i]],
-                                  **{
-                                    "name": self.names[i],
-                                    "monitor": self.monitor,
-                                    "formatter": self.formatter
-                                  })
+                               **{
+                               "name": self.names[i],
+                               "monitor": self.monitor,
+                               "formatter": self.formatter
+                               })
 
+    # Now pipes' attributes are setted.
     self.setted = True
 
   def _check(self):
     """
     Check whether the connection of pipes is legal.
+
+    Raise ValueError if any rules are violated.
+
+    Not implemented.
     """
     pass
 
-  def set_params(self, **params):
-    self.params = params
-    self._set_pipes()
+  def set_pipe_params(self, **params):
+    """
+    Set pipe parameters before receiving.
+    """
+    for name in params:
+      if name not in self.params:
+        raise ValueError("Invalid pipe name \'{}\'. "
+                         "Should be in {}".format(name, self.names))
+
+      for sub_name in params[name]:
+        index = self.names.index(name)
+        valid_names = self.pipes[index]._get_param_names()
+        self.params[name][sub_name] = params[name][sub_name]
+
+    self._set_pipe_params()
+
+  def get_log(self):
+    """
+    Return log of last receiving.
+    """
+    logs = ""
+    for name, log in zip(self.names, self.monitor.logs[-1]):
+      logs += name + ": \n" + log
+
+    return logs
