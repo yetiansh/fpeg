@@ -54,13 +54,11 @@ FPEG
 
 Codecs, transformers, processors are all pipes in FPEG. 
 
-A certain codec, like huffman codec, is a subclass of Pipe (and Codec). To implement a codec is to implement the \_\_init\_\_, encode and decode methods. Put what the codec need and what the monitor should know in \_\_init\_\_'s signature, such as Look Up Table (LUT) and Define Huffman Table (DHT) for encoding and decoding. After that, you can set what should not be known by monitor, such as its log and logger.
+A certain codec, like huffman codec, is a subclass of Pipe (and Codec). To implement a codec is to implement the \_\_init\_\_, encode and decode methods. Put what the codec need and what the monitor should know in \_\_init\_\_'s signature, such as Define Huffman Table (DHT) for encoding and decoding. After that, you can set what should not be known by monitor, such as its log and formatter.
 
-In encode and decode methods, the codec should first clear its history information, i.e. the LUTs and DHTs used in processing former data, using self._clear_record method. Moreover, encode and decode methods should support parallel computing using python’s implementation subprocess pool (self.pool). **Refer to the code of HuffmanCodec for more information and follow a unified code specification** (*make other codec similar to HuffmanCodec !!!*).
+In encode and decode methods, the codec should first clear its history information, i.e. the DHTs used in processing former data, using self._clear_record method. Moreover, encode and decode methods should support parallel computing using python’s implementation subprocess pool. **Refer to the code of HuffmanCodec for more information and follow a unified code specification** (make other codec similar to HuffmanCodec).
 
-Now you should only implement Codecs. Transformer, processor, metrics, monitor and pipeline’s form are not completely sure yet.
 
- 
 
 ## TODO
 
