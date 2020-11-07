@@ -1,40 +1,63 @@
 from fpeg.pipeline import Pipeline
+from fpeg.codec import HuffmanCodec
 from fpeg.utils.preprocess import Spliter
 from fpeg.utils.io import Reader
 
-
-spliter = Spliter(name="spliter0")
-reader = Reader(name="reader0")
-
-pipeline = Pipeline([
-                    ("reader0", reader),
-                    ("spliter0", spliter)
-                    ],
-                    params={
-                      "reader0": {"flag": "grayscale"},
-                      "spliter0": {"tile_shape": (128, 256)}
-                    })
-
-
-path = r"in/mudrock.jpg"
-pipeline.recv(path)
-
-path = r"in/rosmontis.jpg"
-pipeline.recv(path)
-
-for i in range(5):
-  pipeline.set_params(**{
-                        "reader0": {"flag": "grayscale"},
-                        "spliter0": {"tile_shape": (128 + 4 ** i,
-                          256 - 3 ** i)}
+if __name__ == "__main__":
+  pipeline = Pipeline([
+                      ("reader0", Reader()),
+                      ("spliter0", Spliter()),
+                      ("codec0", HuffmanCodec())
+                      ],
+                      params={
+                      "reader0": {"flag": "color"},
+                      "spliter0": {"tile_shape": (256, 256)},
+                      "codec0": {
+                        "mode": "encode",
+                        "dhts": [],
+                        "accelerated": True
+                       }
                       })
+
+  pipeline.set_pipe_params(**{
+                           "codec0": {
+                              "use_lut": True,
+                           }
+                           })
+
+  path = r"in/mudrock.jpg"
   pipeline.recv(path)
+  print(pipeline.get_log())
 
-for pipe in pipeline.pipes:
-  print(pipe)
+  pipeline.set_pipe_params(**{
+                           "codec0": {
+                              "accelerated": False
+                           }
+                           })
 
-for log in pipeline.monitor.logs:
-  print(''.join(log))
+  path = r"in/rosmontis.jpg"
+  pipeline.recv(path)
+  print(pipeline.get_log())
 
-for params in pipeline.monitor.params:
-  print(params)
+  pipeline.set_pipe_params(**{
+                          "codec0": {
+                            "mode": "decode",
+                            "dhts": [],
+                            "accelerated": True
+                          }
+                          })
+
+  path = r"in/mudrock.jpg"
+  pipeline.recv(path)
+  print(pipeline.get_log())
+
+  pipeline.set_pipe_params(**{
+                           "codec0": {
+                              "accelerated": False
+                           }
+                           })
+
+
+  path = r"in/rosmontis.jpg"
+  pipeline.recv(path)
+  print(pipeline.get_log())
