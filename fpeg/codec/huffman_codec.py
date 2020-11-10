@@ -82,7 +82,7 @@ class HuffmanCodec(Codec):
       else:
         inputs = [[x, []] for x in X]
       with Pool(min(self.task_number, self.max_pool_size)) as p:
-        X = p.map(_encode, inputs)
+        X = p.starmap(_encode, inputs)
     else:
       if use_lut:
         X = [_encode(x, lut) for x, lut in zip(X, self.luts)]
@@ -96,7 +96,7 @@ class HuffmanCodec(Codec):
     try:
       self.dhts = params["dhts"]
       self.luts = dht2lut(self.dhts)
-    except KeyError as err:
+    except KeyError:
       msg = "\"dhts\" should be passed to the decode method."
       self.logs[-1] += self.formatter.error(msg)
       raise KeyError(msg)
@@ -112,7 +112,7 @@ class HuffmanCodec(Codec):
     return X
 
 
-def _encode(X, lut=None):
+def _encode(X, lut):
   """
   Implement canonical huffman encoding here.
 
