@@ -71,9 +71,15 @@ if __name__ == "__main__":
 
   config.add_section("preprocess")
   config.set("preprocess", "tile_shape", (256, 256))
+  config.set("preprocess", "depth", 8)
 
   config.add_section("pprint")
   config.set("pprint", "indent", 2)
   config.set("pprint", "width", 80)
+
+  config.add_section("io")
+  config.set("io", "read_dir", os.path.abspath(os.path.join(absdir, "..", "in")))
+  config.set("io", "write_dir", os.path.abspath(os.path.join(absdir, "..", "out")))
+  config.set("io", "default_filename", "foobar.jpg")
 
   config.write(config_path)
