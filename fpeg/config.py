@@ -82,4 +82,9 @@ if __name__ == "__main__":
   config.set("io", "write_dir", os.path.abspath(os.path.join(absdir, "..", "out")))
   config.set("io", "default_filename", "foobar.jpg")
 
+  config.add_section("quantify")
+  config.set("quantify", "D", 3)
+  config.set("quantify", "G", 1)
+  config.set("quantify", "QCD", "1000011111111")
+
   config.write(config_path)

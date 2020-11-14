@@ -22,6 +22,7 @@ class HuffmanCodec(Codec):
                name="Huffman Codec",
                mode="encode",
                dhts=[],
+               use_lut=False,
                accelerated=False
                ):
     """
@@ -50,6 +51,7 @@ class HuffmanCodec(Codec):
     self.name = name
     self.mode = mode
     self.dhts = dhts
+    self.use_lut = use_lut
     self.accelerated = accelerated
 
     self.min_task_number = min_task_number
@@ -59,13 +61,13 @@ class HuffmanCodec(Codec):
   def encode(self, X, **params):
     self.logs[-1] += self.formatter.message("Trying to encode received data.")
     try:
-      use_lut = bool(params["use_lut"])
-      self.logs[-1] += self.formatter.message("\"use_lut\" is specified as " + str(use_lut) + ".")
+      self.use_lut = params["use_lut"]
+      self.logs[-1] += self.formatter.message("\"use_lut\" is specified as " + str(self.use_lut) + ".")
     except KeyError:
-      self.logs[-1] += self.formatter.warning("\"use_lut\" is not specified, now set to False.")
-      use_lut = False
+      self.logs[-1] += self.formatter.warning("\"use_lut\" is not specified, now set to {}.".format(self.use_lut))
+      self.use_lut = False
 
-    if use_lut:
+    if self.use_lut:
       try:
         self.logs[-1] += self.formatter.message("Converting DHTs to LUTs.")
         self.dhts = params["dhts"]
@@ -84,7 +86,7 @@ class HuffmanCodec(Codec):
       with Pool(min(self.task_number, self.max_pool_size)) as p:
         X = p.starmap(_encode, inputs)
     else:
-      if use_lut:
+      if self.use_lut:
         X = [_encode(x, lut) for x, lut in zip(X, self.luts)]
       else:
         X = [_encode(x, []) for x in X]
