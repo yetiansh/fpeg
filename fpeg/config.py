@@ -87,4 +87,7 @@ if __name__ == "__main__":
   config.set("quantify", "G", 1)
   config.set("quantify", "QCD", "1000011111111")
 
+  config.add_section("decode")
+  config.set("decode", "path", "./test.bin")
+
   config.write(config_path)

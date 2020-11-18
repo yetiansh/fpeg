@@ -7,6 +7,8 @@ from ..config import read_config
 
 config = read_config()
 
+D = config.get("quantify", "D")
+standard_path = config.get("decode","path")
 min_task_number = config.get("accelerate", "codec_min_task_number")
 max_pool_size = config.get("accelerate", "codec_max_pool_size")
 
@@ -19,7 +21,7 @@ class EBCOT_Codec(Codec):
     def __init__(self,
                  name="EBCOTCodec",
                  mode="encode",
-                 D = 1,
+                 D = D,
                  accelerated=False
                  ):
         """
@@ -46,23 +48,39 @@ class EBCOT_Codec(Codec):
         # based on equation 10.22 in jpeg2000
         self.G = 1
         self.D = D
+        self.path = standard_path
         self.Kmax = max(0, G+epsilon_b-1)
         self.accelerated = accelerated
+        self.bitcode = []
+        self.deTiles = []
 
         self.min_task_number = min_task_number
         self.max_pool_size = max_pool_size
+    
+    def recv(self, X, **params):
+        self.logs.append("")
+        self.logs[-1] += self.formatter.message("Receiving data.")
+        self.received_ = X
+
+        if self.mode == "encode":
+            self.bitcode,streamonly = self._EBCOT_encode(X)
+        elif self.mode == "decode":
+            try:
+                self.path = params["path"]
+                self.logs[-1] += self.formatter.message("\"D\" is specified as {}.".format(self.path))
+            except KeyError:
+                self.logs[-1] += self.formatter.warning("\"D\" is not specified, now set to {}.".format(self.path))
+            bitcode = self._EBCOT_decode(path))
+            
+        return self
+
 
     def encode(self, X, **params):
         self.logs[-1] += self.formatter.message("Trying to encode received data.")
 
         self.epsilon_b = params["epsilon_b"]
-        if self.accelerated:
-            self.logs[-1] += self.formatter.message("Using multiprocess pool to accelerate EBCOT encoding.")
-            inputs = [[x, []] for x in X]
-            with Pool(min(self.task_number, self.max_pool_size)) as p:
-                X = p.starmap(_encode, inputs)
-        else:
-            bitcode,streamonly = self._EBCOT_encode(X)
+            
+        bitcode,streamonly = self._EBCOT_encode(X)
 
         return bitcode,streamonly
 
