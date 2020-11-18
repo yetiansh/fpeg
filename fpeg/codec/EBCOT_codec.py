@@ -67,9 +67,9 @@ class EBCOT_Codec(Codec):
         elif self.mode == "decode":
             try:
                 self.path = params["path"]
-                self.logs[-1] += self.formatter.message("\"D\" is specified as {}.".format(self.path))
+                self.logs[-1] += self.formatter.message("\"Path of decoding file\" is specified as {}.".format(self.path))
             except KeyError:
-                self.logs[-1] += self.formatter.warning("\"D\" is not specified, now set to {}.".format(self.path))
+                self.logs[-1] += self.formatter.warning("\"Path of decoding file\" is not specified, now set to {}.".format(self.path))
             bitcode = self._EBCOT_decode(path))
             
         return self
