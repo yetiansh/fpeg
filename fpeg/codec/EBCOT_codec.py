@@ -19,6 +19,7 @@ class EBCOT_Codec(Codec):
     def __init__(self,
                  name="EBCOTCodec",
                  mode="encode",
+                 D = 1,
                  accelerated=False
                  ):
         """
@@ -44,6 +45,7 @@ class EBCOT_Codec(Codec):
         self.mode = mode
         # based on equation 10.22 in jpeg2000
         self.G = 1
+        self.D = D
         self.Kmax = max(0, G+epsilon_b-1)
         self.accelerated = accelerated
 
@@ -87,7 +89,7 @@ class EBCOT_Codec(Codec):
             symbol = D[i][0]
             cxLabel = CX[i][0]
             expectedSymbol = CXTable[cxLabel][1]
-            p = PETTable[CXTable[cxLabel][0]][3]
+            p = PETTable[CXTable[cxLabel][0]][3] #PETTable [CXTable[cxLabel][0]]---[3]
             encoder.A = encoder.A - p
             if encoder.A < p:
                 # Conditional exchange of MPS and LPS
@@ -113,16 +115,16 @@ class EBCOT_Codec(Codec):
         encoder = self.encode_end(encoder)
         return encoder
     def _transferbyte(self, encoder):
-        CPartialMask = np.uint32(133693440)
-        CPartialCmp = np.uint32(4161273855)
-        CMsbsMask = np.uint32(267386880)
-        CMsbsCmp = np.uint32(4027580415) # CMsbs的补码
-        CCarryMask = np.uint32(2**27)
+        CPartialMask = np.uint32(133693440)#               00000111111110000000000000000000          
+        CPartialCmp = np.uint32(4161273855)#               11111000000001111111111111111111
+        CMsbsMask = np.uint32(267386880) # 27-20msbs标志位  00001111111100000000000000000000
+        CMsbsCmp = np.uint32(4027580415) # CMsbs的补码      11110000000011111111111111111111
+        CCarryMask = np.uint32(2**27) # 取进位              00001000000000000000000000000000
         if encoder.T == 255:
-            # 不能将任何进位传给T
+            # 不能将任何进位传给T，需要位填充
             encoder = self._putbyte(encoder)
-            encoder.T = np.uint8((encoder.C & CMsbsMask)>>20)
-            encoder.C = encoder.C & CMsbsCmp
+            encoder.T = np.uint8((encoder.C & CMsbsMask)>>20)#27-20位
+            encoder.C = encoder.C & CMsbsCmp                 #
             encoder.t = 7
         else:
             # 从C将任何进位传到T
@@ -147,6 +149,7 @@ class EBCOT_Codec(Codec):
     def _MQ_decode(self, stream, CX):
         PETTable = np.load(r"PETTable.npy")
         CXTable = np.load(r"CX_Table.npy")
+        #MQ decode initializtion
         encoder = EBCOTparam() 
         encoder.A = np.uint16(0)
         encoder.C = np.uint32(0)
@@ -160,8 +163,10 @@ class EBCOT_Codec(Codec):
         encoder.C = encoder.C << 7
         encoder.t = encoder.t - 7
         encoder.A = np.uint16(2**15)
-        CActiveMask = np.uint32(16776960)
-        CActiveCmp = np.uint32(4278190335)
+
+        #MQ decode procedure
+        CActiveMask = np.uint32(16776960)#  00000000111111111111111100000000 
+        CActiveCmp = np.uint32(4278190335)# 11111111000000000000000011111111
         decodeD = []
         for i in range(CX.__len__()):
             cxLabel = CX[i][0]
@@ -238,12 +243,14 @@ class EBCOT_Codec(Codec):
             f.write(struct.pack(str(l)+'i', *streamonly))
         return bitcode,streamonly
     def _tile_encode(self, tile, h=64, w=64):
+        _depthOfDwt = self.D
+
         tile_cA = tile.y_coeffs[0]
         # np.save("tile0.npy",(tile.y_coeffs,tile.Cb_coeffs,tile_cA))
         newBit, newStream = self._band_encode(tile_cA, 'LL', h, w) 
         bitcode = newBit
         streamOnly = newStream
-        for i in range(1,4):
+        for i in range(1,_depthOfDwt+1):
             temp_tile = tile.y_coeffs[i]
             newBit, newStream = self._band_encode(temp_tile[0], 'LH', h, w)
             bitcode = np.hstack((bitcode, newBit))
@@ -258,7 +265,7 @@ class EBCOT_Codec(Codec):
         newBit, newStream = self._band_encode(tile_cA, 'LL', h, w)
         bitcode = np.hstack((bitcode,newBit))
         streamOnly = np.hstack((streamOnly, newStream))
-        for i in range(1,4):
+        for i in range(1,_depthOfDwt+1):
             temp_tile = tile.Cb_coeffs[i]
             newBit, newStream = self._band_encode(temp_tile[0], 'LH', h, w)
             bitcode = np.hstack((bitcode, newBit))
@@ -273,7 +280,7 @@ class EBCOT_Codec(Codec):
         newBit, newStream = self._band_encode(tile_cA, 'LL', h, w)
         bitcode = np.hstack((bitcode,newBit))
         streamOnly = np.hstack((streamOnly, newStream))
-        for i in range(1,4):
+        for i in range(1,_depthOfDwt+1):
             temp_tile = tile.Cr_coeffs[i]
             newBit, newStream = self._band_encode(temp_tile[0], 'LH', h, w)
             bitcode = np.hstack((bitcode, newBit))
@@ -880,6 +887,18 @@ class EBCOT_Codec(Codec):
         return deSign
 
 class EBCOTparam(object):
+    """
+    EBCOT parameter is parameter used by MQ encode and decode processes
+    
+    initialized in MQ encoding
+    interval length			    A = 8000H    
+    Lower bound register        C = 0		 	    
+    Current code byte number    L = -1
+    Temporary byte buffer	    T = 0
+    Down-counter			    t = 12
+
+    """
+
     def __init__(self):
         self.C = np.uint32(0)
         self.A = np.uint16(32768)
