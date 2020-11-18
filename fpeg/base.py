@@ -1,5 +1,4 @@
 from inspect import signature, Parameter
-from multiprocessing import Pool
 from pprint import PrettyPrinter
 
 from .config import read_config
@@ -48,13 +47,13 @@ class Pipe:
     """
     return self.recv(X, **params).send()
 
-  # def recv(self, X, **params):
-  #   """
-  #   Just let subclass rewrite this method.
-  #
-  #   Data received by the pipe are processed and stored when this recv method is called.
-  #   """
-  #   return self
+  def recv(self, X, **params):
+    """
+    Just let subclass rewrite this method.
+  
+    Data received by the pipe are processed and stored when this recv method is called.
+    """
+    return self
 
   def send(self):
     """
@@ -86,28 +85,29 @@ class Pipe:
 
   def accelerate(self, **params):
     """
-    Start a pool for subprocesses when number of tasks is more than a certain value.
+    Set self.accelerated as True when number of tasks exceeds the setted minimun task number.
+
+    If self.accelerated is true, pipe will open a subprocess pool for parallel computation when receiving and processing data.
+
+    The function mapped to the pool must not be method of pipe.
     """
-    self.logs[-1] += self.formatter.error("Trying to accelerate process.")
+    self.logs[-1] += self.formatter.message("Trying to accelerate process.")
     try:
       self.task_number = params["task_number"]
     except KeyError as err:
-      msg = "\"task_number\" must be passed to the accelerate method."
-      self.logs[-1] += self.formatter.error(msg)
-      raise err
+      msg = "\"task_number\" should be passed to the accelerate method."
+      self.logs[-1] += self.formatter.warning(msg)
+      self.task_number = len(self.received_)
 
     try:
-      self.max_pool_size = params["max_pool_size"]
+      self.accelerated = params["accelerated"]
     except KeyError:
-      pass
+      try:
+        self.max_pool_size = params["max_pool_size"]
+      except KeyError:
+        pass
 
-    try:
-      self.accelerate = params["accelerate"]
-    except KeyError:
-      self.accelerate = self.accelerate or bool(self.task_number < self.min_task_number)
-
-    if self.accelerate:
-      self.pool = Pool(min(self.task_number, self.max_pool_size))
+      self.accelerated = self.accelerated or bool(self.task_number < self.min_task_number)
 
   def set_params(self, **params):
     if not params:
@@ -158,7 +158,9 @@ class Pipe:
     parameters = [p for p in init_signature.parameters.values()
                   if p.name != 'self' and p.kind != p.VAR_KEYWORD]
 
-    # make monitor, formatter, pprinter visible to pipeline.
+    # Make monitor, formatter, pprinter visible to pipeline.
+    # These attributes are initialized by the Pipe base class,
+    # and is invisible to pipeline in subclasses if not do so.
     included_names = ["monitor", "formatter", "pprinter"]
     names = [p.name for p in parameters]
     names.extend(included_names)
@@ -193,8 +195,8 @@ class Codec(Pipe):
     """
     self.logs.append("")
     self.logs[-1] += self.formatter.message("Receiving data.")
-    self.accelerate(**params)
     self.received_ = X
+    self.accelerate(**params)
     if self.mode == "encode":
       self.sended_ = self.encode(X, **params)
     elif self.mode == "decode":
@@ -217,8 +219,8 @@ class Transformer(Pipe):
   def recv(self, X, **params):
     self.logs.append("")
     self.logs[-1] += self.formatter.message("Receiving data.")
-    self.accelerate(**params)
     self.received_ = X
+    self.accelerate(**params)
     if self.mode == "forward":
       self.sended_ = self.forward(X, **params)
     elif self.mode == "backward":

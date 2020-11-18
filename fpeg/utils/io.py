@@ -1,9 +1,15 @@
+import os
 import cv2
+import numpy as np
+
 from ..base import Pipe
 from ..config import read_config
 
 
 config = read_config()
+read_dir = config.get("io", "read_dir")
+write_dir = config.get("io", "write_dir")
+default_filename = config.get("io", "default_filename")
 
 
 class Reader(Pipe):
@@ -13,7 +19,8 @@ class Reader(Pipe):
 
   def __init__(self,
                name="Image Reader",
-               flag="color"):
+               flag="color",
+               path=os.path.join(read_dir, default_filename)):
     """
     Init and set attributes of a image reader.
 
@@ -50,12 +57,7 @@ class Reader(Pipe):
       self.logs[-1] += self.formatter.error(msg)
       raise ValueError(msg)
 
-    self.sended_ = []
-    if len(X.shape) == 3:
-      for i in range(X.shape[2]):
-        self.sended_.append(X[:, :, i])
-    else:
-      self.sended_.append(X[:, :])
+    self.sended_ = [X.astype(int)]
 
     return self
 
@@ -66,9 +68,10 @@ class Writer(Pipe):
   """  
 
   def __init__(self,
-               name="Image Writer"):
+               name="Image Writer",
+               path=os.path.join(write_dir, default_filename)):
     """
-    Init and set attributes of a image reader.
+    Init and set attributes of a image writer.
 
     Explicit Attributes
     -------------------
@@ -78,11 +81,15 @@ class Writer(Pipe):
     super().__init__()
 
     self.name = name
+    self.path = path
 
   def recv(self, X, **params):
     self.logs.append("")
     self.logs[-1] += self.formatter.message("Receiving data.")
     self.received_ = X
+
+    X[0] = X[0].astype(np.uint8)
+    cv2.imwrite(self.path, X[0])
     self.sended_ = X
 
     return self

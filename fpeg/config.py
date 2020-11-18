@@ -63,17 +63,28 @@ if __name__ == "__main__":
   config = Config()
 
   config.add_section("accelerate")
-  config.set("accelerate", "codec_min_task_number", 10)
-  config.set("accelerate", "codec_max_pool_size", 30)
+  config.set("accelerate", "codec_min_task_number", 30)
+  config.set("accelerate", "codec_max_pool_size", 10)
 
   config.add_section("log")
   config.set("log", "time_format", "%Y-%m-%d %H:%M:%S")
 
   config.add_section("preprocess")
-  config.set("preprocess", "tile_shape", (64, 64))
+  config.set("preprocess", "tile_shape", (256, 256))
+  config.set("preprocess", "depth", 8)
 
   config.add_section("pprint")
   config.set("pprint", "indent", 2)
   config.set("pprint", "width", 80)
+
+  config.add_section("io")
+  config.set("io", "read_dir", os.path.abspath(os.path.join(absdir, "..", "in")))
+  config.set("io", "write_dir", os.path.abspath(os.path.join(absdir, "..", "out")))
+  config.set("io", "default_filename", "foobar.jpg")
+
+  config.add_section("quantify")
+  config.set("quantify", "D", 3)
+  config.set("quantify", "G", 1)
+  config.set("quantify", "QCD", "1000011111111")
 
   config.write(config_path)
