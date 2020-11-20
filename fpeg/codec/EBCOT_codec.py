@@ -52,6 +52,8 @@ class EBCOT_Codec(Codec):
         self.Kmax = max(0, G+epsilon_b-1)
         self.accelerated = accelerated
         self.bitcode = []
+
+        self.tiles = []
         self.deTiles = []
 
         self.min_task_number = min_task_number
@@ -649,6 +651,15 @@ class EBCOT_Codec(Codec):
                 cx = -1
             """
         return cx
+    def encode_end(self, encoder):
+        nbits = 27-15-encoder.t
+        encoder.C = encoder.C * np.uint32(2**encoder.t)
+        while nbits > 0:
+            encoder = self.transfer_byte(encoder)
+            nbits = nbits - encoder.t
+            encoder.C = encoder.C * np.uint32(2**encoder.t)
+        encoder = self.transfer_byte(encoder)
+        return encoder
 
     def _EBCOT_decode(self, path):
         # bitcode = np.load('jpeg2k.npy')
@@ -925,3 +936,7 @@ class EBCOTparam(object):
         self.L = np.int32(-1)
         self.stream = np.uint8([])
 
+class Tile(object):
+    def __init__(self, tile_image):
+        self.tile_image = tile_image
+        self.y_tile, self.Cb_tile, self.Cr_tile = None, None, None
