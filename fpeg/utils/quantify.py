@@ -1,3 +1,7 @@
+__all__ = [
+  "Quantizer"
+]
+
 from multiprocessing import Pool
 import numpy as np
 

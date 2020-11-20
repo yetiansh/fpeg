@@ -2,8 +2,8 @@ from inspect import signature, Parameter
 from pprint import PrettyPrinter
 
 from .config import read_config
-from .utils.format import Formatter
-from .utils.monitor import Monitor
+from .format import Formatter
+from .monitor import Monitor
 
 
 config = read_config()

@@ -1,8 +1,6 @@
 from .base import *
-# from .codec import *
-# from .transformer import *
-from .utils.monitor import Monitor
-from .utils.format import Formatter
+from .monitor import Monitor
+from .format import Formatter
 
 
 config = read_config()

@@ -1,3 +1,7 @@
+__all__ = [
+  "ColorTransformer"
+]
+
 import numpy as np
 
 from ..base import Pipe

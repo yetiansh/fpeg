@@ -1,3 +1,7 @@
+__all__ = [
+  "Spliter"
+]
+
 import numpy as np
 
 from ..base import Pipe
