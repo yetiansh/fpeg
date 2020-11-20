@@ -15,7 +15,7 @@ from ..funcs.funcs import dcps_array_3d
 config = read_config()
 
 D = config.get("jpeg2000", "D")
-dwt_coeffs = config.get("jpeg200", "dwt_coeffs")
+dwt_coeffs = config.get("jpeg2000", "dwt_coeffs")
 
 min_task_number = config.get("accelerate", "codec_min_task_number")
 max_pool_size = config.get("accelerate", "codec_max_pool_size")
@@ -60,7 +60,7 @@ class DWTransformer(Transformer):
 		self.lossy = lossy
 		self.accelerated = accelerated
 
-		self.db97_coeffs, self.lg53_coeffs = self.dwt_coeffs
+		self.db97_coeffs, self.lg53_coeffs = self.dwt_coeffs[0], self.dwt_coeffs[1]
 		self.min_task_number = min_task_number
 		self.max_pool_size = max_pool_size
 
@@ -71,9 +71,9 @@ class DWTransformer(Transformer):
 			pass
 
 		if self.lossy:
-			wavelet = Wavelet('DB97', self.coeffs_db97)
+			wavelet = Wavelet('DB97', self.db97_coeffs)
 		else:
-			wavelet = Wavelet('LG53', self.coeffs_lg53)
+			wavelet = Wavelet('LG53', self.lg53_coeffs)
 
 		coeffs = []
 		for x in X:
@@ -84,8 +84,8 @@ class DWTransformer(Transformer):
 			                         channel1_coeff[0],
 			                         channel2_coeff[0]])
 
-			coeffs = [a_coeff]
-			for i in range(1, self.D - 1):
+			coeff = [a_coeff]
+			for i in range(1, self.D):
 				h_coeff = cat_arrays_2d([channel0_coeff[i][0],
 				                         channel1_coeff[i][0],
 				                         channel2_coeff[i][0]])
@@ -95,7 +95,9 @@ class DWTransformer(Transformer):
 				d_coeff = cat_arrays_2d([channel0_coeff[i][2],
 				                         channel1_coeff[i][2],
 				                         channel2_coeff[i][2]])
-				coeffs.append((h_coeff, v_coeff, d_coeff))
+				coeff.append((h_coeff, v_coeff, d_coeff))
+
+			coeffs.append(coeff)
 
 		return coeffs
 	
@@ -106,9 +108,9 @@ class DWTransformer(Transformer):
 			pass
 
 		if self.lossy:
-			wavelet = Wavelet('DB97', self.coeffs_db97)
+			wavelet = Wavelet('DB97', self.db97_coeffs)
 		else:
-			wavelet = Wavelet('LG53', self.coeffs_lg53)
+			wavelet = Wavelet('LG53', self.lg53_coeffs)
 
 		tiles = []
 		for x in X:

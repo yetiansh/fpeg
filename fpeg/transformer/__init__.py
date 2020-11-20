@@ -2,4 +2,4 @@ __all__ = [
   "DWTransformer"
 ]
 
-from .dwt_transformer import DWTransformer
+from .dw_transformer import DWTransformer

@@ -60,12 +60,12 @@ def read_config():
 
 
 if __name__ == "__main__":
-  from funcs.jpeg_funcs import *
+  from funcs import *
 
   config = Config()
 
   config.add_section("accelerate")
-  config.set("accelerate", "codec_min_task_number", 30)
+  config.set("accelerate", "codec_min_task_number", 10)
   config.set("accelerate", "codec_max_pool_size", 10)
 
   config.add_section("log")

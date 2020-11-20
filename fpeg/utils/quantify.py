@@ -7,13 +7,15 @@ import numpy as np
 
 from ..base import Pipe
 from ..config import read_config
+from ..funcs import parse_marker
 
 
 config = read_config()
 
-D = config.get("quantify", "D")
-QCD = config.get("quantify", "QCD")
-delta_vb = config.get("quantify", "delta_vb")
+D = config.get("jpeg2000", "D")
+QCD = config.get("jpeg2000", "QCD")
+delta_vb = config.get("jpeg2000", "delta_vb")
+
 min_task_number = config.get("accelerate", "codec_min_task_number")
 max_pool_size = config.get("accelerate", "codec_max_pool_size")
 
@@ -71,7 +73,7 @@ class Quantizer(Pipe):
     self.QCD = QCD
     self.delta_vb = delta_vb
 
-    self.epsilon_b, self.mu_b = _parse_marker(self.QCD)
+    self.epsilon_b, self.mu_b = parse_marker(self.QCD)
     self.min_task_number = min_task_number
     self.max_pool_size = max_pool_size
 
@@ -99,11 +101,11 @@ class Quantizer(Pipe):
     except KeyError:
       self.logs[-1] += self.formatter.warning("\"D\" is not specified, now set to {}.".format(self.D))
 
-    self.epsilon_b, self.mu_b = _parse_marker(self.QCD)
+    self.epsilon_b, self.mu_b = parse_marker(self.QCD)
 
     delta_bs = []
     for i in range(self.D):
-      delta_bs.append(2 ** -(self.epsilon_b + i - self.D) * (1 + mu_b / (2 ** 11)))
+      delta_bs.append(2 ** -(self.epsilon_b + i - self.D) * (1 + self.mu_b / (2 ** 11)))
 
     if self.mode == "quantify":
       if self.irreversible:
@@ -123,7 +125,7 @@ class Quantizer(Pipe):
         self.logs[-1] += self.formatter.warning("\"delta_vb\" is not specified, now set to {}.".format(self.delta_vb))
 
       delta_vbs = [self.delta_vb] * self.D
-      if irreversible:
+      if self.irreversible:
         if self.accelerated:
           self.logs[-1] += self.formatter.message("Using multiprocess pool to accelerate decoding.")
           inputs = list(zip(X, delta_bs, delta_vbs))
@@ -142,14 +144,13 @@ class Quantizer(Pipe):
     return self
 
 
-def _parse_marker(QCD):
-  return int(QCD[:5], 2), int(QCD[5:], 2)
-
-
 def _quantize(tile, delta_bs):
   quantified_tiles = []
   for subbands, delta_b in zip(tile, delta_bs):
-    quantified_tiles.append([np.array(np.sign(subband) * np.abs(subband) / delta_b, dtype=int) for subband in subbands])
+    if isinstance(subbands, tuple):
+      quantified_tiles.append(tuple([np.array(np.sign(subband) * np.abs(subband) / delta_b, dtype=int) for subband in subbands]))
+    else:
+      quantified_tiles.append(np.array(subbands * np.abs(subbands) / delta_b, dtype=int))
 
   return quantified_tiles
 
@@ -157,6 +158,9 @@ def _quantize(tile, delta_bs):
 def _dequantize(tile, delta_bs, delta_vbs):
   dequantified_tiles = []
   for subbands, delta_b, delta_vb in zip(tile, delta_bs, delta_vbs):
-    dequantified_tiles.append([np.sign(subband) * (subband + delta_vb) * delta_b])
+    if isinstance(subbands, tuple):
+      dequantified_tiles.append(tuple([np.sign(subband) * (subband + delta_vb) * delta_b for subband in subbands]))
+    else:
+      dequantified_tiles.append(np.sign(subbands) * (subbands + delta_vb) * delta_b)
 
   return dequantified_tiles
