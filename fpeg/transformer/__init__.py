@@ -1,5 +1,5 @@
-# package
-# __init__.py
+__all__ = [
+  "DWTransformer"
+]
 
-from .dwtTransformer import dwtTransformer
-
+from .dwt_transformer import DWTransformer
