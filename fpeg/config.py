@@ -90,4 +90,7 @@ if __name__ == "__main__":
   config.set("jpeg2000", "mq_table", mq_table())
   config.set("jpeg2000", "dwt_coeffs", dwt_coeffs())
 
+  config.add_section("decode")
+  config.set("decode", "path", "./test.bin")
+
   config.write(config_path)
