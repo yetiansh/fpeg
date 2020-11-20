@@ -1,4 +1,9 @@
+__all__ = [
+  "HuffmanCodec",
+  "ShannonCodec",
+  "EBCOTCodec"
+]
+
 from .huffman_codec import HuffmanCodec
 from .shannon_codec import ShannonCodec
-
-__all__ = ["HuffmanCodec", "ShannonCodec"]
+from .ebcot_codec import EBCOTCodec
