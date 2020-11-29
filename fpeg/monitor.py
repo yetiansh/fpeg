@@ -10,13 +10,13 @@ class Monitor:
     self.params = []
     self.waking = False
   
-  def gather(self, data, log, params):
+  def gather(self, name, data, log, params):
     if not self.waking:
       raise RuntimeError("Monitor is sleeping. Do not send message to the monitor.")
 
-    self.data[-1].append(data)
-    self.logs[-1].append(log)
-    self.params[-1].append(params)
+    self.data[-1][name] = data
+    self.logs[-1][name] = log
+    self.params[-1][name] = params
     self.sleep()
 
   def report(self):
@@ -29,6 +29,6 @@ class Monitor:
     self.waking = False
 
   def prepare(self):
-    self.data.append([])
-    self.logs.append([])
-    self.params.append([])
+    self.data.append({})
+    self.logs.append({})
+    self.params.append({})

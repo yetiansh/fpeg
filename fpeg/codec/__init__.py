@@ -6,4 +6,4 @@ __all__ = [
 
 from .huffman_codec import HuffmanCodec
 from .shannon_codec import ShannonCodec
-from .ebcot_codec import EBCOTCodec
+from .ebcot_codec1 import EBCOTCodec

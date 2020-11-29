@@ -81,7 +81,7 @@ class Pipe:
 
     self.logs[-1] += self.formatter.message("Responding to monitor.")
     self.sended = False
-    return (self.received_, self.sended_), self.logs[-1], self.get_params()
+    return self.name, (self.received_, self.sended_), self.logs[-1], self.get_params()
 
   def accelerate(self, **params):
     """

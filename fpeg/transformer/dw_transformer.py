@@ -2,15 +2,12 @@ __all__ = [
 	"DWTransformer"
 ]
 
-from multiprocessing import Pool
-import numpy as np
-from pywt import Wavelet, wavedec2, waverec2
+from pywt import wavedec2, Wavelet, waverec2
 
 from ..base import Transformer
 from ..config import read_config
 from ..funcs.funcs import cat_arrays_2d
 from ..funcs.funcs import dcps_array_3d
-
 
 config = read_config()
 
@@ -25,6 +22,7 @@ class DWTransformer(Transformer):
 	"""
 	Discrete Wavelet Transformer.
 	"""
+
 	def __init__(self,
 	             name="dwt transformer",
 	             mode="forward",
@@ -85,7 +83,7 @@ class DWTransformer(Transformer):
 			                         channel2_coeff[0]])
 
 			coeff = [a_coeff]
-			for i in range(1, self.D):
+			for i in range(1, self.D + 1):
 				h_coeff = cat_arrays_2d([channel0_coeff[i][0],
 				                         channel1_coeff[i][0],
 				                         channel2_coeff[i][0]])
@@ -100,7 +98,7 @@ class DWTransformer(Transformer):
 			coeffs.append(coeff)
 
 		return coeffs
-	
+
 	def backward(self, X, **params):
 		try:
 			self.lossy = params["lossy"]
@@ -120,7 +118,7 @@ class DWTransformer(Transformer):
 			channel1_coeff = [channel1_a_coeff]
 			channel2_coeff = [channel2_a_coeff]
 
-			for i in range(1, len(x)):
+			for i in range(1, self.D + 1):
 				channel0_h_coeff, channel1_h_coeff, channel2_h_coeff = dcps_array_3d(x[i][0])
 				channel0_v_coeff, channel1_v_coeff, channel2_v_coeff = dcps_array_3d(x[i][1])
 				channel0_d_coeff, channel1_d_coeff, channel2_d_coeff = dcps_array_3d(x[i][2])

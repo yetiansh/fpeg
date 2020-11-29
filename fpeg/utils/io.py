@@ -73,7 +73,7 @@ class Writer(Pipe):
   """  
 
   def __init__(self,
-               name="Image Writer",
+               name="Writer",
                path=os.path.join(write_dir, default_filename)):
     """
     Init and set attributes of a image writer.

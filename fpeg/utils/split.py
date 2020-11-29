@@ -10,7 +10,7 @@ from ..config import read_config
 
 config = read_config()
 
-tile_shape = config.get("preprocess", "tile_shape")
+tile_shape = config.get("jpeg2000", "tile_shape")
 
 
 class Spliter(Pipe):
