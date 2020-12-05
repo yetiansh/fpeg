@@ -118,11 +118,16 @@ class DWTransformer(Transformer):
 			channel1_coeff = [channel1_a_coeff]
 			channel2_coeff = [channel2_a_coeff]
 
-			for i in range(1, self.D + 1):
-				channel0_h_coeff, channel1_h_coeff, channel2_h_coeff = dcps_array_3d(x[i][0])
-				channel0_v_coeff, channel1_v_coeff, channel2_v_coeff = dcps_array_3d(x[i][1])
-				channel0_d_coeff, channel1_d_coeff, channel2_d_coeff = dcps_array_3d(x[i][2])
-
+			for i in range(1, len(x)):
+				if i < self.D + 1:
+					channel0_h_coeff, channel1_h_coeff, channel2_h_coeff = dcps_array_3d(x[i][0])
+					channel0_v_coeff, channel1_v_coeff, channel2_v_coeff = dcps_array_3d(x[i][1])
+					channel0_d_coeff, channel1_d_coeff, channel2_d_coeff = dcps_array_3d(x[i][2])
+				else:
+					z = np.zeros_like(x[i][0])
+					channel0_h_coeff, channel1_h_coeff, channel2_h_coeff = z, z, z
+					channel0_v_coeff, channel1_v_coeff, channel2_v_coeff = z, z, z
+					channel0_d_coeff, channel1_d_coeff, channel2_d_coeff = z, z, z
 				channel0_coeff.append((channel0_h_coeff, channel0_v_coeff, channel0_d_coeff))
 				channel1_coeff.append((channel1_h_coeff, channel1_v_coeff, channel1_d_coeff))
 				channel2_coeff.append((channel2_h_coeff, channel2_v_coeff, channel2_d_coeff))
