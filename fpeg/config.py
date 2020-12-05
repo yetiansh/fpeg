@@ -60,7 +60,7 @@ def read_config():
 
 
 if __name__ == "__main__":
-  from funcs import *
+  from funcs import mq_table, dwt_coeffs
 
   config = Config()
 
@@ -83,12 +83,16 @@ if __name__ == "__main__":
   config.add_section("jpeg2000")
   config.set("jpeg2000", "D", 3)
   config.set("jpeg2000", "G", 1)
-  config.set("jpeg2000", "QCD", "1000011111111")
+  config.set("jpeg2000", "QCD", "1111100000000000")
   config.set("jpeg2000", "delta_vb", 0.5)
   config.set("jpeg2000", "reserve_bits", 8)
   config.set("jpeg2000", "tile_shape", (256, 256))
   config.set("jpeg2000", "depth", 8)
   config.set("jpeg2000", "mq_table", mq_table())
   config.set("jpeg2000", "dwt_coeffs", dwt_coeffs())
+
+  config.add_section("fpeg")
+  config.set("fpeg", "depth", 8)
+  config.set("fpeg", "tile_shape", (256, 256))
 
   config.write(config_path)
