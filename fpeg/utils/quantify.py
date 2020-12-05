@@ -143,15 +143,14 @@ class Quantizer(Pipe):
 			except KeyError:
 				self.logs[-1] += self.formatter.warning("\"delta_vb\" is not specified, now set to {}.".format(self.delta_vb))
 
-			delta_vbs = [self.delta_vb] * self.D
 			if self.irreversible:
 				if self.accelerated:
 					self.logs[-1] += self.formatter.message("Using multiprocess pool to accelerate dequantify.")
-					inputs = list(zip(X, delta_bs, delta_vbs))
+					inputs = [[x, delta_bs, self.delta_vb] for x in X]
 					with Pool(min(self.task_number, self.max_pool_size)) as p:
 						X = p.starmap(_dequantize, inputs)
 				else:
-					X = [_dequantize(x, delta_b, self.delta_vb) for x, delta_b, delta_vb in zip(X, delta_bs, delta_vbs)]
+					X = [_dequantize(x, delta_bs, self.delta_vb) for x in X]
 			else:
 				if self.accelerated:
 					self.logs[-1] += self.formatter.message("Using multiprocess pool to accelerate dequantify.")
@@ -179,13 +178,10 @@ def _quantize(tile, delta_bs):
 	return quantified_tile
 
 
-def _dequantize(tile, delta_bs, delta_vbs):
-	dequantified_tile = []
-	for subbands, delta_b, delta_vb in zip(tile, delta_bs, delta_vbs):
-		if isinstance(subbands, tuple):
-			dequantified_tile.append(tuple([np.sign(subband) * (subband + delta_vb) * delta_b for subband in subbands]))
-		else:
-			dequantified_tile.append(np.sign(subbands) * (subbands + delta_vb) * delta_b)
+def _dequantize(coeffs, delta_bs, delta_vb):
+	dequantified_tile = [np.sign(coeffs[0]) * (coeffs[0] + delta_vb) * delta_bs[0]]
+	for subbands, delta_b in zip(coeffs[1:], delta_bs):
+		dequantified_tile.append(tuple([np.sign(subband) * (subband + delta_vb) * delta_b for subband in subbands]))
 
 	return dequantified_tile
 
