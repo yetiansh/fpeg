@@ -1,4 +1,6 @@
-import cv2
+def fpeg_compress(args):
+  pass
 
-def fpeg():
+
+def fpeg_decompress(args):
   pass
