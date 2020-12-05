@@ -2,12 +2,8 @@ __all__ = [
 	"EBCOTCodec"
 ]
 
-import struct
 from multiprocessing import Pool
 import numpy as np
-import time
-import sys
-sys.path.append("/Users/zhangzhengquan/Documents/GitHub/fpeg")
 
 from fpeg.base import Codec
 from fpeg.config import read_config
