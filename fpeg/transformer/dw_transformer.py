@@ -69,7 +69,7 @@ class DWTransformer(Transformer):
 			pass
 
 		if self.lossy:
-			wavelet = Wavelet('DB97', self.db97_coeffs)
+			wavelet = 'bior2.2'
 		else:
 			wavelet = Wavelet('LG53', self.lg53_coeffs)
 
