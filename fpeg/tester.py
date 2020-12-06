@@ -27,4 +27,4 @@ class Tester:
         self.kwargs[name] = params[name]
 
   def __repr__(self):
-    return "Tester with attributes: " + self.pprinter.pformat({"func": self.func, "args": self.args})
+    return "Tester with attributes: " + self.pprinter.pformat({"func": self.func, "kwargs": self.kwargs})

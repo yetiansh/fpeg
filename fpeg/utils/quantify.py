@@ -118,6 +118,7 @@ class Quantizer(Pipe):
 		for i in range(self.D):
 			delta_bs.append(2 ** -(self.epsilon_b + i - self.D) * (1 + self.mu_b / (2 ** 11)))
 
+		print(delta_bs)
 		if self.mode == "quantify":
 			if self.irreversible:
 				if self.accelerated:
@@ -171,17 +172,17 @@ class Quantizer(Pipe):
 
 
 def _quantize(tile, delta_bs):
-	quantified_tile = [np.array(tile[0] * np.abs(tile[0]) / delta_bs[0], dtype=int)]
+	quantified_tile = [np.array(tile[0] / delta_bs[0], dtype=np.int64)]
 	for subbands, delta_b in zip(tile[1:], delta_bs):
-		quantified_tile.append(tuple([np.array(np.sign(subband) * np.abs(subband) / delta_b, dtype=int) for subband in subbands]))
+		quantified_tile.append(tuple([np.array(subband / delta_b, dtype=np.int64) for subband in subbands]))
 
 	return quantified_tile
 
 
 def _dequantize(coeffs, delta_bs, delta_vb):
-	dequantified_tile = [np.sign(coeffs[0]) * (coeffs[0] + delta_vb) * delta_bs[0]]
+	dequantified_tile = [(coeffs[0] + delta_vb) * delta_bs[0]]
 	for subbands, delta_b in zip(coeffs[1:], delta_bs):
-		dequantified_tile.append(tuple([np.sign(subband) * (subband + delta_vb) * delta_b for subband in subbands]))
+		dequantified_tile.append(tuple([(subband + delta_vb) * delta_b for subband in subbands]))
 
 	return dequantified_tile
 

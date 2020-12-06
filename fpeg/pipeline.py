@@ -1,4 +1,5 @@
 from .base import *
+from .config import read_config
 from .monitor import Monitor
 from .format import Formatter
 
@@ -17,9 +18,9 @@ class Pipeline:
   def __init__(self, steps, *,
                name="Pipeline",
                params={},
+               testers={},
                monitor=Monitor(),
-               formatter=Formatter(fmt=time_format),
-               testers=[]):
+               formatter=Formatter(fmt=time_format)):
     """
     Init pipeline.
     """
@@ -27,6 +28,7 @@ class Pipeline:
 
     self.name = name
     self.params = params
+    self.testers = testers
     self.monitor = monitor
     self.formatter = formatter
 
@@ -49,6 +51,15 @@ class Pipeline:
     # Pipes' explicit attributes are cleared, need to be setted.
     self.setted = False
 
+  def eval(self):
+    results = {}
+    for name in self.testers:
+      testers = self.testers[name]
+      output = self.monitor.data[-1][name][1]
+      results[name] = [tester.eval(output) for tester in testers]
+
+    return results
+
   def _set_up(self):
     if not len(self.steps):
       msg = "Can not construct an empty pipeline."
@@ -57,14 +68,14 @@ class Pipeline:
     for name, pipe in self.steps:
       if name not in self.params:
         # raise error here
-        raise ValueError("Invalid pipe name \'{}\'. "
-                         "Should be in {}".format(name,
-                                                  list(self.params.keys())
-                                                  )
-                         )
+        raise ValueError("Invalid pipe name \'{}\'. Should be in {}.".format(name, list(self.params.keys())))
 
       self.names.append(name)
       self.pipes.append(pipe)
+
+    for name in self.testers:
+      if name not in self.params:
+        raise ValueError("Invalid tester target \'{}\'. Should be in {}.".format(name, list(self.params.keys())))
     
     self._set_pipe_params()
     self._check()
@@ -84,9 +95,7 @@ class Pipeline:
   def _check(self):
     """
     Check whether the connection of pipes is legal.
-
     Raise ValueError if any rules are violated.
-
     Not implemented.
     """
     pass
@@ -107,12 +116,22 @@ class Pipeline:
 
     self._set_pipe_params()
 
+  def set_testers(self, **params):
+    for name in params:
+      if name not in self.names:
+        raise ValueError("Invalid pipe name \'{}\'. "
+                         "Should be in {}".format(name, self.names))
+
+      sub_params = params[name]
+      for loc, params in sub_params:
+        self.testers[name][loc].set_params(**params)
+
   def get_log(self):
     """
     Return log of last receiving.
     """
     logs = ""
-    for name, log in zip(self.names, self.monitor.logs[-1]):
+    for name, log in self.monitor.logs[-1].items():
       logs += name + ": \n" + log
 
     return logs

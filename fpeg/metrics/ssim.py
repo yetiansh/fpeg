@@ -17,8 +17,7 @@ def ssim(X,
          Y=None,
          dynamic_range=None):
 	if Y is not None:
-		return [_ssim(x, y, 
-		              dynamic_range=dynamic_range) for x, y in zip(X, Y)]
+		return [_ssim(x, y, dynamic_range=dynamic_range) for x, y in zip(X, Y)]
 	else:
 		return None
 
@@ -56,7 +55,7 @@ def mssim(X, Y=None,
 		               win_size=win_size,
 		               dynamic_range=dynamic_range,
 		               gaussian_weights=gaussian_weights,
-		               full=full) for x, y in zip(X, y)]
+		               full=full) for x, y in zip(X, Y)]
 	else:
 		return None
 

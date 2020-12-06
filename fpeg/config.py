@@ -65,8 +65,10 @@ if __name__ == "__main__":
   config = Config()
 
   config.add_section("accelerate")
-  config.set("accelerate", "codec_min_task_number", 10)
-  config.set("accelerate", "codec_max_pool_size", 10)
+  config.set("accelerate", "codec_min_task_number", 5)
+  config.set("accelerate", "codec_max_pool_size", 30)
+  config.set("accelerate", "transformer_min_task_number", 5)
+  config.set("accelerate", "transformer_max_pool_size", 30)
 
   config.add_section("log")
   config.set("log", "time_format", "%Y-%m-%d %H:%M:%S")
@@ -83,7 +85,7 @@ if __name__ == "__main__":
   config.add_section("jpeg2000")
   config.set("jpeg2000", "D", 3)
   config.set("jpeg2000", "G", 1)
-  config.set("jpeg2000", "QCD", "1111100000000000")
+  config.set("jpeg2000", "QCD", "0100000000000000")
   config.set("jpeg2000", "delta_vb", 0.5)
   config.set("jpeg2000", "reserve_bits", 8)
   config.set("jpeg2000", "tile_shape", (256, 256))

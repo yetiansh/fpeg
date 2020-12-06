@@ -2,20 +2,20 @@ __all__ = [
 	"DWTransformer"
 ]
 
+import numpy as np
 from pywt import wavedec2, Wavelet, waverec2
 
 from ..base import Transformer
 from ..config import read_config
-from ..funcs.funcs import cat_arrays_2d
-from ..funcs.funcs import dcps_array_3d
+from ..funcs.funcs import cat_arrays_2d, dcps_array_3d
 
 config = read_config()
 
 D = config.get("jpeg2000", "D")
 dwt_coeffs = config.get("jpeg2000", "dwt_coeffs")
 
-min_task_number = config.get("accelerate", "codec_min_task_number")
-max_pool_size = config.get("accelerate", "codec_max_pool_size")
+min_task_number = config.get("accelerate", "transformer_min_task_number")
+max_pool_size = config.get("accelerate", "transformer_max_pool_size")
 
 
 class DWTransformer(Transformer):
@@ -28,7 +28,6 @@ class DWTransformer(Transformer):
 	             mode="forward",
 	             lossy=True,
 	             D=D,
-	             dwt_coeffs=dwt_coeffs,
 	             accelerated=False):
 		"""
 		Init and set attributes of a discrete wavelet transformer.
@@ -39,6 +38,8 @@ class DWTransformer(Transformer):
 		  Name of the codec.
 		mode: str, optional
 		  Mode of the codec, must in ["encode", "decode"].
+		lossy: bool, optional
+      Whether the transform is loss or lossless.
 		accelerated: bool, optional
       Whether the process would be accelerated by subprocess pool.
 
@@ -54,11 +55,10 @@ class DWTransformer(Transformer):
 		self.name = name
 		self.mode = mode
 		self.D = D
-		self.dwt_coeffs = dwt_coeffs
 		self.lossy = lossy
 		self.accelerated = accelerated
 
-		self.db97_coeffs, self.lg53_coeffs = self.dwt_coeffs[0], self.dwt_coeffs[1]
+		self.db97_coeffs, self.lg53_coeffs = dwt_coeffs[0], dwt_coeffs[1]
 		self.min_task_number = min_task_number
 		self.max_pool_size = max_pool_size
 
@@ -69,7 +69,8 @@ class DWTransformer(Transformer):
 			pass
 
 		if self.lossy:
-			wavelet = Wavelet('DB97', self.db97_coeffs)
+			# wavelet = Wavelet('DB97', self.db97_coeffs)
+			wavelet = 'bior2.2'
 		else:
 			wavelet = Wavelet('LG53', self.lg53_coeffs)
 
@@ -106,7 +107,8 @@ class DWTransformer(Transformer):
 			pass
 
 		if self.lossy:
-			wavelet = Wavelet('DB97', self.db97_coeffs)
+			# wavelet = Wavelet('DB97', self.db97_coeffs)
+			wavelet = 'bior2.2'
 		else:
 			wavelet = Wavelet('LG53', self.lg53_coeffs)
 
@@ -124,10 +126,10 @@ class DWTransformer(Transformer):
 					channel0_v_coeff, channel1_v_coeff, channel2_v_coeff = dcps_array_3d(x[i][1])
 					channel0_d_coeff, channel1_d_coeff, channel2_d_coeff = dcps_array_3d(x[i][2])
 				else:
-					z = np.zeros_like(x[i][0])
-					channel0_h_coeff, channel1_h_coeff, channel2_h_coeff = z, z, z
-					channel0_v_coeff, channel1_v_coeff, channel2_v_coeff = z, z, z
-					channel0_d_coeff, channel1_d_coeff, channel2_d_coeff = z, z, z
+					channel0_h_coeff, channel1_h_coeff, channel2_h_coeff = dcps_array_3d(np.zeros_like(x[i][0]))
+					channel0_v_coeff, channel1_v_coeff, channel2_v_coeff = dcps_array_3d(np.zeros_like(x[i][1]))
+					channel0_d_coeff, channel1_d_coeff, channel2_d_coeff = dcps_array_3d(np.zeros_like(x[i][2]))
+
 				channel0_coeff.append((channel0_h_coeff, channel0_v_coeff, channel0_d_coeff))
 				channel1_coeff.append((channel1_h_coeff, channel1_v_coeff, channel1_d_coeff))
 				channel2_coeff.append((channel2_h_coeff, channel2_v_coeff, channel2_d_coeff))

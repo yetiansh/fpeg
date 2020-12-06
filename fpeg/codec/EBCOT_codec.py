@@ -2,6 +2,7 @@ __all__ = [
 	"EBCOTCodec"
 ]
 
+from copy import deepcopy
 from multiprocessing import Pool
 import numpy as np
 
@@ -26,13 +27,13 @@ class EBCOTCodec(Codec):
 	"""
 
 	def __init__(self,
-	             name="EBCOT codec",
-	             mode="encode",
-	             D=D,
-	             G=G,
-	             QCD=QCD,
-	             accelerated=False
-	             ):
+							 name="EBCOT codec",
+							 mode="encode",
+							 D=D,
+							 G=G,
+							 QCD=QCD,
+							 accelerated=False
+							 ):
 		"""
 		Init and set attributes of a canonical EBCOT codec.
 
@@ -95,7 +96,7 @@ class EBCOTCodec(Codec):
 		else:
 			X = [_tile_decode(bitcode, self.D) for bitcode in bitcodes]
 		
-		print(X[0])
+		# print(X[0])
 		return X
 
 
@@ -139,7 +140,7 @@ def _MQencode(CX, D):
 		|fill_lsp
 
 	"""
-	PETTable, CXTable = mq_table
+	PETTable, CXTable = deepcopy(mq_table)
 	encoder = EBCOTparam()
 	for i in range(len(D)):
 		symbol = D[i][0]
@@ -204,12 +205,12 @@ def _putbyte(encoder):
 	# 将T中的内容写入字节缓存
 	if encoder.L >= 0:
 		encoder.stream = np.append(encoder.stream, encoder.T)
-		encoder.L = encoder.L + 1
+	encoder.L = encoder.L + 1
 	return encoder
 
 
 def _MQ_decode(stream, CX):
-	PETTable, CXTable = mq_table
+	PETTable, CXTable = deepcopy(mq_table)
 	# MQ decode initializtion
 	encoder = EBCOTparam()
 	encoder.A = np.uint16(0)
@@ -256,6 +257,7 @@ def _MQ_decode(stream, CX):
 				encoder.A = 2 * encoder.A
 				encoder.C = 2 * encoder.C
 				encoder.t = encoder.t - 1
+		# print(i, symbol)
 		decodeD.append([symbol])
 	return decodeD
 
@@ -327,7 +329,7 @@ def _tile_encode(tile, D, h=64, w=64):
 
 def _band_encode(tile, bandMark, h=64, w=64, num=8):
 	# 码流：[h, w, CX1, 2048, stream1, 2048, ..., CXn, streamn, 2048, 2049,CXn+1, streamn+1, 2048, ...,2050]
-	(h_cA, w_cA) = np.shape(tile)
+	h_cA, w_cA = np.shape(tile)
 	h_left_over = h_cA % h
 	w_left_over = w_cA % w
 	cA_extend = np.pad(tile, ((0, h - h_left_over), (0, w - w_left_over)), 'constant')
@@ -354,9 +356,10 @@ def _embeddedBlockEncoder(codeBlock, bandMark, h=64, w=64, num=8):
 	bitPlane = np.zeros((h,w,MaxInCodeBlock),dtype=np.uint8)
 	for i in range(h):
 		for j in range(w):
-			number = bin(abs(codeBlock[i][j]))[2:]
-			temp = [0 for k in range(MaxInCodeBlock-len(number))]+[int(number[r]) for r in range(len(number))]
-			bitPlane[i][j] = np.asarray(temp)
+			# number = bin(np.abs(codeBlock[i][j], dtype=np.int64))[2:]
+			number = bin(np.abs(codeBlock[i][j]))[2:]
+			temp = [0] * (MaxInCodeBlock-len(number)) + [int(num) for num in number]
+			bitPlane[i][j] = np.array(temp)
 	bitPlane = np.transpose(bitPlane, (2, 0, 1))
 	# For Test
 	"""
@@ -408,8 +411,8 @@ def _SignifiancePropagationPass(D, CX, S1, S3, pointer, plane, bandMark, signs, 
 				if S1[row][col] != 0:
 					continue  # is significant
 				temp = S1extend[row][col] + S1extend[row + 1][col] + S1extend[row + 2][col] + S1extend[row][col + 1] + \
-				       S1extend[row + 2][col + 1] + S1extend[row][col + 2] + S1extend[row + 1][col + 2] + S1extend[row + 2][
-					       col + 2]
+							 S1extend[row + 2][col + 1] + S1extend[row][col + 2] + S1extend[row + 1][col + 2] + S1extend[row + 2][
+								 col + 2]
 				if temp == 0:
 					continue  # is insignificant
 				tempCx = _ZeroCoding(S1extend[row:row + 3, col:col + 3], bandMark)
@@ -717,23 +720,23 @@ def _tile_decode(codestream, D):
 		codestream = codestream[_index + 1:]
 					
 	start1 = _depthOfDWT*3+1
-	start2 = _depthOfDWT*6+1
+	start2 = _depthOfDWT*6+2
 	tile = [cat_arrays_2d([temp[0],
-                        temp[start1],
-                        temp[start2]])]
+												temp[start1],
+												temp[start2]])]
 	
 	for i in range(_depthOfDWT):
 		
 		tile.append((cat_arrays_2d([temp[3 * i + 1],
- 		                           temp[3 * i + start1+1],
- 		                           temp[3 * i + start2+1]]),
- 		             cat_arrays_2d([temp[3 * i + 2],
- 		                           temp[3 * i + start1+2],
- 		                           temp[3 * i + start2+2]]),
- 		             cat_arrays_2d([temp[3 * i + 31],
- 		                           temp[3 * i + start1+3],
- 		                           temp[3 * i + start2+3]])))
-	print(tile[0][0])
+															 temp[3 * i + start1+1],
+															 temp[3 * i + start2+1]]),
+								 cat_arrays_2d([temp[3 * i + 2],
+															 temp[3 * i + start1+2],
+															 temp[3 * i + start2+2]]),
+								 cat_arrays_2d([temp[3 * i + 3],
+															 temp[3 * i + start1+3],
+															 temp[3 * i + start2+3]])))
+	
 	return tile
 
 
@@ -776,7 +779,7 @@ def _decode_block(D, CX, h=64, w=64, num=32):
 	pointer = 0
 	for i in range(num):
 		V[i, :, :], signs, deS1, deS3, pointer = _SignificancePassDecoding(V[i, :, :], D, CX, deS1, deS3, pointer, signs, w,
-		                                                                   h)
+																																			 h)
 		V[i, :, :], deS2, pointer = _MagnitudePassDecoding(V[i, :, :], D, deS1, deS2, deS3, pointer, w, h)
 		V[i, :, :], deS1, deS3, signs, pointer = _CleanPassDecoding(V[i, :, :], D, CX, deS1, deS3, pointer, signs, w, h)
 		deS3 = np.zeros((h, w))
@@ -1026,3 +1029,19 @@ class EBCOTparam(object):
 '''
 改了decodeblock，_embeddedBlockEncoder，banddecode和bandencode改了num的预设值
 '''
+
+# if __name__ == "__main__":
+# 	h, w = 64, 64
+# 	testblock = np.zeros((h, w), dtype=np.uint8)
+# 	for i in range(h):
+# 		for j in range(w):
+# 			testblock[i][j] = i*4
+# 	#(bitcode, _) = _band_encode(testblock, "LL", h=64, w=64, num=8)
+# 	#decodeblock = _band_decode(list(bitcode), h=64, w=64, num=32)
+# 	CX, D, bitplanelength = _embeddedBlockEncoder(testblock, "LL", h, w, num=8)
+# 	encoder = _MQencode(CX, D)
+# 	decodeD = _MQ_decode(encoder.stream, CX)
+# 	decodeblock = _decode_block(D, CX, h, w, num=8)
+
+
+# 	a = 1
